@@ -5,26 +5,48 @@ import javax.jms.*;
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-public class TelematikEinheit{
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
-    private Fahrdaten fahrdaten = new Fahrdaten(1);
+public class TelematikEinheit implements Runnable
+{
 
-    //Constructor
-    public TelematikEinheit() {
-        this.fahrdaten = new Fahrdaten(1);
+    private String  id;
+    private int zeitinervall;
+
+    public TelematikEinheit(int zeitinervall) {
+        this.id = UUID.randomUUID().toString();
+        this.zeitinervall = zeitinervall;
     }
 
-    public Fahrdaten getFahrdaten() {
-        return fahrdaten;
+    public String getId() {
+        return id;
+    }
+
+    public static String getUrl() {
+        return url;
+    }
+
+    public static String getSubject() {
+        return subject;
+    }
+
+    @Override
+    public String toString() {
+        return "TelematikEinheit{" +
+                "id='" + id + '\'' +
+                '}';
     }
 
     //URL of the JMS server. DEFAULT_BROKER_URL will just mean that JMS server is on localhost
-	private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
+    private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
 
-	// default broker URL is : tcp://localhost:61616"
-	private static String subject = "Daten_Queue"; // Queue Name.You can create any/many queue names as per your requirement.
+    // default broker URL is : tcp://localhost:61616"
+    private static String subject = "Daten_Queue"; // Queue Name.You can create any/many queue names as per your requirement.
 
-    public void send(Fahrdaten fahrdaten) throws JMSException{
+    public void send(Nachricht nachricht) throws JMSException {
+
 
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
         factory.setTrustAllPackages(true);
@@ -43,34 +65,59 @@ public class TelematikEinheit{
         //The queue will be created automatically on the server.
         Destination destination = session.createQueue(subject);
 
-        //Fahrdaten get Datum
-        fahrdaten.getTmstp();
-
         // MessageProducer is used for sending messages to the queue.
         MessageProducer producer = session.createProducer(destination);
 
         // Creating the object message with the Fahrdaten
         ObjectMessage message = session
-                .createObjectMessage(fahrdaten);
+                .createObjectMessage(nachricht);
 
         // Here we are sending our message!
         producer.send(message);
 
         System.out.println("GESENDET '" + message.getObject() + "'");
         connection.close();
-
     }
 
 
-    public static void main(String[] args) throws JMSException {
+   /* public static void run(String[] args) throws JMSException{
+        Nachricht nachricht = new Nachricht();
+        TelematikEinheit telematikEinheit = new TelematikEinheit();
+        telematikEinheit.send(nachricht);
+    }*/
 
-        TelematikEinheit t1 = new TelematikEinheit();
-        TelematikEinheit t2 = new TelematikEinheit();
-        t1.send(t1.getFahrdaten());
-        t2.send(t2.getFahrdaten());
+    @Override
+    public void run() {
+
+        double strecke = 0;
+        double breitengrad = 10.0;
+        double laengengrad = 27.0;
+
+        while(true){
+
+            try {
+                Thread.sleep(zeitinervall);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            drive(strecke, breitengrad, laengengrad);
+            //TODO: Fahren simulieren
+
+            Nachricht nachricht = new Nachricht(this.id,strecke, breitengrad, laengengrad);
+
+            //TODO: Nachricht an Queue schicken
+        }
+
     }
 
+    public void drive(double strecke, double breitengrad, double laengengrad){
+
+        strecke += ThreadLocalRandom.current().nextInt(1, 50 + 1);
+        breitengrad += ThreadLocalRandom.current().nextInt(1, 50 + 1);
+        laengengrad += ThreadLocalRandom.current().nextInt(1, 50 + 1);
 
     }
+
+}
 
 

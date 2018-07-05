@@ -2,10 +2,11 @@ package Telematic;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-
 import javax.jms.*;
+import java.net.URISyntaxException;
 
-public class Eingangsfilter {
+public class Eingangsfilter{
+
 
     // URL of the JMS server
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
@@ -14,10 +15,11 @@ public class Eingangsfilter {
     // Name of the queue we will receive messages from
     private static String subject = "Daten_Queue";
 
-    public void receive() throws JMSException {
+    //for Message Listener
+    private String consumerName;
 
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-        factory.setTrustAllPackages(true);
+
+    public void getData() throws JMSException, URISyntaxException, java.lang.Exception {
 
         // Getting JMS connection from the server
         ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
@@ -25,32 +27,56 @@ public class Eingangsfilter {
         connection.start();
 
         // Creating session for seding messages
-        Session session = connection.createSession(false,
-                Session.AUTO_ACKNOWLEDGE);
+                Session session = connection.createSession(false,
+                        Session.AUTO_ACKNOWLEDGE);
 
-        // Getting the queue 'JCG_QUEUE'
-        Destination destination = session.createQueue(subject);
+        // Getting the queue 'VALLYSOFTQ'
+                Destination destination = session.createQueue(subject);
 
         // MessageConsumer is used for receiving (consuming) messages
-        MessageConsumer consumer = session.createConsumer(destination);
+                MessageConsumer consumer = session.createConsumer(destination);
 
         // Here we receive the message.
-        Message message = consumer.receive();
+        // By default this call is blocking, which means it will wait
+        // for a message to arrive on the queue.
+                Message message = consumer.receive();
 
-        // We will be using TestMessage in our example. MessageProducer sent us a TextMessage
-        // so we must cast to it to get access to its .getText() method.
+        // There are many types of Message and TextMessage
+        // is just one of them. Producer sent us a TextMessage
+        // so we must cast to it to get access to its .getText()
+        // method.
+
         if (message instanceof ObjectMessage) {
-            ObjectMessage o_message = (ObjectMessage) message;
-            System.out.println("Received message '" + o_message.getObject() + "'");
+            handleMessage(message);
+            ObjectMessage objectMessage = (ObjectMessage) message;
+            System.out.println("Received message '" + objectMessage.getObject()
+                    + "'");
         }
         connection.close();
     }
 
 
-    public static void main(String[] args) throws JMSException {
-        Eingangsfilter ef = new Eingangsfilter();
-        ef.receive();
+
+    public void handleMessage(Message message) {
+
+        ObjectMessage objectMessage = (ObjectMessage) message;
+        try {
+            System.out.println(consumerName + " received "
+                    + objectMessage.getObject());
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
 
     }
 
-}
+
+    public static void main(String[] args) throws JMSException, java.lang.Exception {
+
+        Eingangsfilter filter = new Eingangsfilter();
+        filter.getData();
+    }
+    }
+
+
+
+
