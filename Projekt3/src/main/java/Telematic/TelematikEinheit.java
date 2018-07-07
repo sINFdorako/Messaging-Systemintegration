@@ -2,12 +2,12 @@ package Telematic;
 
 
 import javax.jms.*;
+
+import Telematic.GPS.GPS;
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+
 
 public class TelematikEinheit implements Runnable
 {
@@ -79,19 +79,26 @@ public class TelematikEinheit implements Runnable
         connection.close();
     }
 
+    public GPS drive(GPS data){
 
-   /* public static void run(String[] args) throws JMSException{
-        Nachricht nachricht = new Nachricht();
-        TelematikEinheit telematikEinheit = new TelematikEinheit();
-        telematikEinheit.send(nachricht);
-    }*/
+        double distance = ((double) Math.random() * 200);
+        double d = data.getDistance() + distance;
+        double b = d / 112 + data.getBreitengrad();
+        double l = d / 71 + data.getLängengrad();
+
+        data.setDistance(d);
+        data.setBreitengrad(b);
+        data.setLängengrad(l);
+
+        return data;
+    }
 
     @Override
-    public void run() {
+    public void run(){
 
-        double strecke = 0;
-        double breitengrad = 10.0;
-        double laengengrad = 27.0;
+        String id = UUID.randomUUID().toString();
+        GPS data = new GPS( GPS.initialLongitude, GPS.initialLatitude,0);
+        TelematikEinheit telematikEinheit = new TelematikEinheit(1);
 
         while(true){
 
@@ -100,21 +107,15 @@ public class TelematikEinheit implements Runnable
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            drive(strecke, breitengrad, laengengrad);
-            //TODO: Fahren simulieren
 
-            Nachricht nachricht = new Nachricht(this.id,strecke, breitengrad, laengengrad);
+            Nachricht nachricht = new Nachricht(id, data);
+            try {
+                telematikEinheit.send(nachricht);
+            } catch (JMSException e) {
+                e.printStackTrace();
+            }
 
-            //TODO: Nachricht an Queue schicken
         }
-
-    }
-
-    public void drive(double strecke, double breitengrad, double laengengrad){
-
-        strecke += ThreadLocalRandom.current().nextInt(1, 50 + 1);
-        breitengrad += ThreadLocalRandom.current().nextInt(1, 50 + 1);
-        laengengrad += ThreadLocalRandom.current().nextInt(1, 50 + 1);
 
     }
 

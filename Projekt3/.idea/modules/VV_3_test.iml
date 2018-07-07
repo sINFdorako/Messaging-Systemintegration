@@ -16,6 +16,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="VV_3_main" />
     <orderEntry type="library" name="Gradle: org.apache.activemq:activemq-all:5.15.4" level="project" />
+    <orderEntry type="library" name="Gradle: javax.json:javax.json-api:1.0" level="project" />
   </component>
   <component name="TestModuleProperties" production-module="VV_3_main" />
 </module>
